@@ -11,7 +11,7 @@ alembic==1.13.2
 celery[rabbitmq]==5.4.0
 
 # Kafka
-kafka-python==2.0.2
+kafka-python-ng==2.2.3
 
 # Config
 pydantic-settings==2.5.2
