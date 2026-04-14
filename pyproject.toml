@@ -1,0 +1,12 @@
+[project]
+name = "payflow"
+version = "1.0.0"
+description = "Reference payment gateway: Celery+RabbitMQ, Kafka Outbox, SELECT FOR UPDATE"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
