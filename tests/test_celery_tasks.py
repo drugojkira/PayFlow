@@ -10,11 +10,10 @@ Tests for Celery tasks.
 
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
-from uuid import uuid4
 
 import pytest
 
-from src.models import Account, Payment, PaymentStatus
+from src.models import PaymentStatus
 from src.services.payment import PaymentService
 from tests.factories import AccountFactory
 
@@ -38,14 +37,14 @@ class TestProcessPayment:
         # Call task function directly (synchronous, no broker needed)
         from src.worker.tasks import process_payment
 
-        with patch("src.database.SessionLocal", return_value=db), \
-             patch.object(db, "close"), \
-             patch("src.worker.tasks.send_notification.delay") as mock_notify:
+        with (
+            patch("src.database.SessionLocal", return_value=db),
+            patch.object(db, "close"),
+            patch("src.worker.tasks.send_notification.delay") as mock_notify,
+        ):
             process_payment.__wrapped__(str(payment.id))
 
-            mock_notify.assert_called_once_with(
-                str(payment.id), "COMPLETED"
-            )
+            mock_notify.assert_called_once_with(str(payment.id), "COMPLETED")
 
         db.refresh(payment)
         assert payment.status == PaymentStatus.COMPLETED
@@ -70,9 +69,11 @@ class TestProcessPayment:
 
         from src.worker.tasks import process_payment
 
-        with patch("src.database.SessionLocal", return_value=MagicMock()), \
-             patch("src.services.payment.PaymentService", return_value=mock_service), \
-             patch.object(process_payment, "retry", return_value=Retry()) as mock_retry:
+        with (
+            patch("src.database.SessionLocal", return_value=MagicMock()),
+            patch("src.services.payment.PaymentService", return_value=mock_service),
+            patch.object(process_payment, "retry", return_value=Retry()) as mock_retry,
+        ):
             # Should call self.retry() → raises Retry
             with pytest.raises(Retry):
                 process_payment.__wrapped__(str(payment.id))
@@ -98,10 +99,14 @@ class TestProcessPayment:
 
         from src.worker.tasks import process_payment
 
-        with patch("src.database.SessionLocal", return_value=MagicMock()), \
-             patch("src.services.payment.PaymentService", return_value=mock_service), \
-             patch.object(process_payment, "retry", side_effect=MaxRetriesExceededError()), \
-             patch("src.worker.tasks._mark_payment_failed") as mock_fail:
+        with (
+            patch("src.database.SessionLocal", return_value=MagicMock()),
+            patch("src.services.payment.PaymentService", return_value=mock_service),
+            patch.object(
+                process_payment, "retry", side_effect=MaxRetriesExceededError()
+            ),
+            patch("src.worker.tasks._mark_payment_failed") as mock_fail,
+        ):
             process_payment.__wrapped__(str(payment.id))
 
             mock_fail.assert_called_once()
@@ -154,9 +159,7 @@ class TestProcessPaymentWithRealBroker:
         import socket
 
         parsed = urlparse(rabbitmq_url)
-        sock = socket.create_connection(
-            (parsed.hostname, parsed.port), timeout=5
-        )
+        sock = socket.create_connection((parsed.hostname, parsed.port), timeout=5)
         sock.close()
 
         # Use eager mode to test the full task logic synchronously
@@ -168,9 +171,11 @@ class TestProcessPaymentWithRealBroker:
         try:
             from src.worker.tasks import process_payment
 
-            with patch("src.database.SessionLocal", return_value=db), \
-                 patch.object(db, "close"), \
-                 patch("src.worker.tasks.send_notification.delay"):
+            with (
+                patch("src.database.SessionLocal", return_value=db),
+                patch.object(db, "close"),
+                patch("src.worker.tasks.send_notification.delay"),
+            ):
                 process_payment.delay(str(payment.id))
 
             db.refresh(payment)

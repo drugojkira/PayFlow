@@ -4,7 +4,6 @@ Integration tests for FastAPI endpoints.
 Uses TestClient + real PostgreSQL (via testcontainers).
 """
 
-from decimal import Decimal
 from unittest.mock import patch
 
 import pytest
@@ -74,11 +73,14 @@ class TestPaymentEndpoints:
         receiver_id = resp2.json()["id"]
 
         # Create payment
-        resp = client.post("/payments", json={
-            "from_account_id": sender_id,
-            "to_account_id": receiver_id,
-            "amount": "250.00",
-        })
+        resp = client.post(
+            "/payments",
+            json={
+                "from_account_id": sender_id,
+                "to_account_id": receiver_id,
+                "amount": "250.00",
+            },
+        )
 
         assert resp.status_code == 201
         data = resp.json()
@@ -94,11 +96,14 @@ class TestPaymentEndpoints:
         resp1 = client.post("/accounts", json={"name": "Poor", "balance": "10.00"})
         resp2 = client.post("/accounts", json={"name": "Rich", "balance": "0.00"})
 
-        resp = client.post("/payments", json={
-            "from_account_id": resp1.json()["id"],
-            "to_account_id": resp2.json()["id"],
-            "amount": "100.00",
-        })
+        resp = client.post(
+            "/payments",
+            json={
+                "from_account_id": resp1.json()["id"],
+                "to_account_id": resp2.json()["id"],
+                "amount": "100.00",
+            },
+        )
 
         assert resp.status_code == 400
         data = resp.json()
@@ -113,11 +118,14 @@ class TestPaymentEndpoints:
         resp1 = client.post("/accounts", json={"name": "A", "balance": "1000.00"})
         resp2 = client.post("/accounts", json={"name": "B", "balance": "0.00"})
 
-        resp = client.post("/payments", json={
-            "from_account_id": resp1.json()["id"],
-            "to_account_id": resp2.json()["id"],
-            "amount": "50.00",
-        })
+        resp = client.post(
+            "/payments",
+            json={
+                "from_account_id": resp1.json()["id"],
+                "to_account_id": resp2.json()["id"],
+                "amount": "50.00",
+            },
+        )
         payment_id = resp.json()["id"]
 
         resp = client.get(f"/payments/{payment_id}")
@@ -144,11 +152,14 @@ class TestPaginationEndpoint:
 
         # Create 5 payments
         for i in range(5):
-            client.post("/payments", json={
-                "from_account_id": sid,
-                "to_account_id": rid,
-                "amount": "10.00",
-            })
+            client.post(
+                "/payments",
+                json={
+                    "from_account_id": sid,
+                    "to_account_id": rid,
+                    "amount": "10.00",
+                },
+            )
 
         # Page 1, size 2
         resp = client.get("/payments?page=1&size=2")
@@ -168,11 +179,14 @@ class TestPaginationEndpoint:
         sid = resp1.json()["id"]
         rid = resp2.json()["id"]
 
-        client.post("/payments", json={
-            "from_account_id": sid,
-            "to_account_id": rid,
-            "amount": "10.00",
-        })
+        client.post(
+            "/payments",
+            json={
+                "from_account_id": sid,
+                "to_account_id": rid,
+                "amount": "10.00",
+            },
+        )
 
         # All created payments are PENDING
         resp = client.get("/payments?status=PENDING")

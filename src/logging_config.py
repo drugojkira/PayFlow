@@ -34,7 +34,7 @@ def setup_logging(json_format: bool = False, log_level: str = "INFO"):
     """
     # Shared processors for both structlog and stdlib
     shared_processors: list[structlog.types.Processor] = [
-        structlog.contextvars.merge_contextvars,     # ← merge correlation_id etc.
+        structlog.contextvars.merge_contextvars,  # ← merge correlation_id etc.
         structlog.stdlib.add_log_level,
         structlog.stdlib.add_logger_name,
         structlog.processors.TimeStamper(fmt="iso"),

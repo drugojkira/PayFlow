@@ -49,7 +49,9 @@ class Account(Base):
     name = Column(String(255), nullable=False)
     balance = Column(Numeric(15, 2), nullable=False, default=0)
     version = Column(Integer, nullable=False, default=1)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
     updated_at = Column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -67,12 +69,18 @@ class Payment(Base):
     __tablename__ = "payments"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    from_account_id = Column(UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False)
-    to_account_id = Column(UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False)
+    from_account_id = Column(
+        UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False
+    )
+    to_account_id = Column(
+        UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False
+    )
     amount = Column(Numeric(15, 2), nullable=False)
     status = Column(Enum(PaymentStatus), nullable=False, default=PaymentStatus.PENDING)
     idempotency_key = Column(String(255), unique=True, nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
     updated_at = Column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -107,7 +115,9 @@ class OutboxEvent(Base):
     event_type = Column(String(100), nullable=False)
     payload = Column(JSONB, nullable=False)
     published = Column(Boolean, default=False, nullable=False, index=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
 
     def __repr__(self) -> str:
         return f"<OutboxEvent {self.event_type} published={self.published}>"

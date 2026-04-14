@@ -37,9 +37,9 @@ logger = logging.getLogger(__name__)
     max_retries=5,
     acks_late=True,
     # ★ Exponential backoff
-    retry_backoff=True,       # delay = retry_backoff * (2 ** retries)
-    retry_backoff_max=300,    # cap: 5 minutes max
-    retry_jitter=True,        # add randomness to prevent thundering herd
+    retry_backoff=True,  # delay = retry_backoff * (2 ** retries)
+    retry_backoff_max=300,  # cap: 5 minutes max
+    retry_jitter=True,  # add randomness to prevent thundering herd
 )
 def process_payment(self, payment_id: str):
     """

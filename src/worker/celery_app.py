@@ -15,7 +15,6 @@ Usage:
 """
 
 from celery import Celery
-from celery.schedules import crontab
 from kombu import Exchange, Queue
 
 from src.config import settings
@@ -44,7 +43,7 @@ celery_app.conf.update(
             exchange=default_exchange,
             routing_key="default",
             queue_arguments={
-                "x-dead-letter-exchange": "dead_letter",   # ← route rejected msgs here
+                "x-dead-letter-exchange": "dead_letter",  # ← route rejected msgs here
                 "x-dead-letter-routing-key": "dead_letter",
             },
         ),
@@ -57,22 +56,18 @@ celery_app.conf.update(
     task_default_queue="default",
     task_default_exchange="default",
     task_default_routing_key="default",
-
     # Serialization
     task_serializer="json",
     result_serializer="json",
     accept_content=["json"],
-
     # Reliability
-    task_acks_late=True,                # ACK after task completes (not before)
-    worker_prefetch_multiplier=1,       # Fetch one task at a time
-    task_reject_on_worker_lost=True,    # Re-queue if worker dies
-
+    task_acks_late=True,  # ACK after task completes (not before)
+    worker_prefetch_multiplier=1,  # Fetch one task at a time
+    task_reject_on_worker_lost=True,  # Re-queue if worker dies
     # ★ Exponential backoff for retries
     # retry_backoff=True → delay = backoff * (2 ** (retries - 1))
     # retry 1: 3s, retry 2: 6s, retry 3: 12s (capped by retry_backoff_max)
     task_default_retry_delay=3,
-
     # Periodic tasks (Celery Beat)
     beat_schedule={
         "relay-outbox-events": {
@@ -80,7 +75,6 @@ celery_app.conf.update(
             "schedule": settings.OUTBOX_RELAY_INTERVAL_SECONDS,
         },
     },
-
     # Time limits
     task_soft_time_limit=60,
     task_time_limit=120,

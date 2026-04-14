@@ -14,7 +14,6 @@ Kafka Consumer — downstream processing of payment events.
 import json
 import logging
 import signal
-import sys
 from typing import Any, Callable
 
 from kafka import KafkaConsumer
@@ -35,7 +34,9 @@ class PaymentEventConsumer:
     will be re-delivered on restart.
     """
 
-    def __init__(self, bootstrap_servers: str | None = None, group_id: str = "payment-consumer"):
+    def __init__(
+        self, bootstrap_servers: str | None = None, group_id: str = "payment-consumer"
+    ):
         self.bootstrap_servers = bootstrap_servers or settings.KAFKA_BOOTSTRAP_SERVERS
         self.group_id = group_id
         self._running = False
@@ -55,9 +56,9 @@ class PaymentEventConsumer:
             bootstrap_servers=self.bootstrap_servers,
             group_id=self.group_id,
             auto_offset_reset="earliest",
-            enable_auto_commit=False,       # ← manual commit for at-least-once
+            enable_auto_commit=False,  # ← manual commit for at-least-once
             value_deserializer=lambda m: json.loads(m.decode("utf-8")),
-            consumer_timeout_ms=1000,       # poll timeout
+            consumer_timeout_ms=1000,  # poll timeout
         )
 
         self._running = True
@@ -93,7 +94,9 @@ class PaymentEventConsumer:
     def _process_record(self, record: ConsumerRecord):
         """Routes a Kafka record to the appropriate handler by event_type."""
         # Extract event_type from headers
-        headers = {k: v.decode("utf-8") for k, v in record.headers} if record.headers else {}
+        headers = (
+            {k: v.decode("utf-8") for k, v in record.headers} if record.headers else {}
+        )
         event_type = headers.get("event_type", "unknown")
         payload = record.value
 

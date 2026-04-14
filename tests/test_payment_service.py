@@ -48,9 +48,13 @@ class TestCreatePayment:
         assert receiver.balance == Decimal("300.00")
 
         # Check outbox event was written
-        events = db.execute(
-            select(OutboxEvent).where(OutboxEvent.aggregate_id == str(payment.id))
-        ).scalars().all()
+        events = (
+            db.execute(
+                select(OutboxEvent).where(OutboxEvent.aggregate_id == str(payment.id))
+            )
+            .scalars()
+            .all()
+        )
         assert len(events) == 1
         assert events[0].event_type == "payment.created"
         assert events[0].published is False
@@ -93,7 +97,9 @@ class TestCreatePayment:
         sender = AccountFactory()
 
         service = PaymentService(db)
-        with pytest.raises(AccountNotFoundError, match="Sender account|Receiver account"):
+        with pytest.raises(
+            AccountNotFoundError, match="Sender account|Receiver account"
+        ):
             service.create_payment(
                 from_account_id=sender.id,
                 to_account_id=uuid.uuid4(),
@@ -146,11 +152,15 @@ class TestCompletePayment:
         assert completed.status == PaymentStatus.COMPLETED
 
         # Check two outbox events: created + completed
-        events = db.execute(
-            select(OutboxEvent)
-            .where(OutboxEvent.aggregate_id == str(payment.id))
-            .order_by(OutboxEvent.created_at)
-        ).scalars().all()
+        events = (
+            db.execute(
+                select(OutboxEvent)
+                .where(OutboxEvent.aggregate_id == str(payment.id))
+                .order_by(OutboxEvent.created_at)
+            )
+            .scalars()
+            .all()
+        )
         assert len(events) == 2
         assert events[0].event_type == "payment.created"
         assert events[1].event_type == "payment.completed"
@@ -188,11 +198,15 @@ class TestFailPayment:
         assert receiver.balance == Decimal("100.00")
 
         # Outbox: created + failed
-        events = db.execute(
-            select(OutboxEvent)
-            .where(OutboxEvent.aggregate_id == str(payment.id))
-            .order_by(OutboxEvent.created_at)
-        ).scalars().all()
+        events = (
+            db.execute(
+                select(OutboxEvent)
+                .where(OutboxEvent.aggregate_id == str(payment.id))
+                .order_by(OutboxEvent.created_at)
+            )
+            .scalars()
+            .all()
+        )
         assert len(events) == 2
         assert events[1].event_type == "payment.failed"
         assert events[1].payload["reason"] == "external gateway error"

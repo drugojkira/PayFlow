@@ -164,7 +164,9 @@ class PaymentService:
             raise ValueError(f"Payment {payment_id} not found")
 
         if payment.status != PaymentStatus.PENDING:
-            raise ValueError(f"Payment {payment_id} is {payment.status}, expected PENDING")
+            raise ValueError(
+                f"Payment {payment_id} is {payment.status}, expected PENDING"
+            )
 
         payment.status = PaymentStatus.COMPLETED
         payment.updated_at = datetime.now(timezone.utc)

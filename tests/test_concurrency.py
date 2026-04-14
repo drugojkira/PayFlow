@@ -21,7 +21,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from src.models import Account, Base
+from src.models import Account
 from src.services.payment import InsufficientFundsError, PaymentService
 
 
@@ -130,5 +130,7 @@ def test_no_negative_balance_under_concurrency(session_factory, concurrent_accou
     # Final balance should be exactly $0
     db = session_factory()
     sender = db.execute(select(Account).where(Account.id == sender_id)).scalar_one()
-    assert sender.balance == Decimal("0.00"), f"Balance should be $0, got ${sender.balance}"
+    assert sender.balance == Decimal("0.00"), (
+        f"Balance should be $0, got ${sender.balance}"
+    )
     db.close()

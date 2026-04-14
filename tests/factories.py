@@ -22,7 +22,7 @@ class AccountFactory(factory.alchemy.SQLAlchemyModelFactory):
 
     class Meta:
         model = Account
-        sqlalchemy_session = None           # set in conftest.py per-test
+        sqlalchemy_session = None  # set in conftest.py per-test
         sqlalchemy_session_persistence = "flush"
 
     id = factory.LazyFunction(uuid.uuid4)

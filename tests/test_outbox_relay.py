@@ -11,11 +11,8 @@ Covers:
 import json
 from unittest.mock import MagicMock, patch
 
-import pytest
-from sqlalchemy import select
 
 from src.kafka.outbox_relay import OutboxRelay
-from src.models import OutboxEvent
 from tests.factories import OutboxEventFactory
 
 
@@ -72,7 +69,7 @@ class TestOutboxRelay:
 
     def test_relay_sends_correct_kafka_message(self, db):
         """Verifies Kafka message format: topic, key, value, headers."""
-        event = OutboxEventFactory(
+        OutboxEventFactory(
             aggregate_type="payment",
             aggregate_id="pay-123",
             event_type="payment.created",

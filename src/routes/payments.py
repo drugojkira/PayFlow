@@ -103,7 +103,9 @@ def list_payments(
         query = query.where(Payment.status == status)
         count_query = count_query.where(Payment.status == status)
     if account_id:
-        condition = (Payment.from_account_id == account_id) | (Payment.to_account_id == account_id)
+        condition = (Payment.from_account_id == account_id) | (
+            Payment.to_account_id == account_id
+        )
         query = query.where(condition)
         count_query = count_query.where(condition)
 

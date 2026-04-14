@@ -32,24 +32,35 @@ def register_exception_handlers(app: FastAPI):
 
     @app.exception_handler(InsufficientFundsError)
     async def insufficient_funds_handler(request: Request, exc: InsufficientFundsError):
-        return JSONResponse(status_code=400, content={"error": "insufficient_funds", "detail": str(exc)})
+        return JSONResponse(
+            status_code=400, content={"error": "insufficient_funds", "detail": str(exc)}
+        )
 
     @app.exception_handler(AccountNotFoundError)
     async def account_not_found_handler(request: Request, exc: AccountNotFoundError):
-        return JSONResponse(status_code=404, content={"error": "account_not_found", "detail": str(exc)})
+        return JSONResponse(
+            status_code=404, content={"error": "account_not_found", "detail": str(exc)}
+        )
 
     @app.exception_handler(DuplicatePaymentError)
     async def duplicate_payment_handler(request: Request, exc: DuplicatePaymentError):
-        return JSONResponse(status_code=409, content={"error": "duplicate_payment", "detail": str(exc)})
+        return JSONResponse(
+            status_code=409, content={"error": "duplicate_payment", "detail": str(exc)}
+        )
 
     @app.exception_handler(ValueError)
     async def value_error_handler(request: Request, exc: ValueError):
-        return JSONResponse(status_code=400, content={"error": "bad_request", "detail": str(exc)})
+        return JSONResponse(
+            status_code=400, content={"error": "bad_request", "detail": str(exc)}
+        )
 
     @app.exception_handler(Exception)
     async def unhandled_exception_handler(request: Request, exc: Exception):
         logger.exception(f"Unhandled exception on {request.method} {request.url.path}")
-        return JSONResponse(status_code=500, content={"error": "internal_error", "detail": "Internal server error"})
+        return JSONResponse(
+            status_code=500,
+            content={"error": "internal_error", "detail": "Internal server error"},
+        )
 
 
 # ── Request Logging Middleware ──────────────────────────────

@@ -7,9 +7,11 @@ on:
     branches: [main, master, develop]
 
 jobs:
+  # ── Tests (testcontainers manage Postgres, RabbitMQ, Kafka) ──
   test:
     runs-on: ubuntu-latest
 
+    # Postgres service only for Alembic migration verification
     services:
       postgres:
         image: postgres:16-alpine
@@ -24,32 +26,6 @@ jobs:
           --health-interval 5s
           --health-timeout 3s
           --health-retries 5
-
-      rabbitmq:
-        image: rabbitmq:3-management-alpine
-        ports:
-          - 5672:5672
-          - 15672:15672
-        options: >-
-          --health-cmd "rabbitmq-diagnostics check_running"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-      kafka:
-        image: confluentinc/cp-kafka:7.5.0
-        ports:
-          - 9092:9092
-        env:
-          KAFKA_NODE_ID: 1
-          KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-          KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
-          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-          KAFKA_PROCESS_ROLES: broker,controller
-          KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
-          KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-          KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-          CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
 
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/payments
@@ -72,7 +48,7 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Alembic migrations
+      - name: Verify Alembic migrations
         run: alembic upgrade head
 
       - name: Run tests
@@ -85,6 +61,7 @@ jobs:
           name: test-results
           path: reports/test-results.xml
 
+  # ── Lint ──────────────────────────────────────────────────────
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -105,6 +82,7 @@ jobs:
       - name: Check formatting
         run: ruff format --check src/ tests/
 
+  # ── Docker build (only on main) ──────────────────────────────
   docker-build:
     runs-on: ubuntu-latest
     needs: [test, lint]
@@ -116,5 +94,5 @@ jobs:
       - name: Build Docker image
         run: docker build -t payflow:${{ github.sha }} .
 
-      - name: Verify image runs
+      - name: Verify image starts
         run: docker run --rm payflow:${{ github.sha }} python -c "from src.app import app; print('OK')"

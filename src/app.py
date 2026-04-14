@@ -30,7 +30,7 @@ app.add_middleware(RequestLoggingMiddleware)
 register_exception_handlers(app)
 
 # ── Prometheus Metrics (/metrics endpoint) ──────────────────
-from prometheus_fastapi_instrumentator import Instrumentator
+from prometheus_fastapi_instrumentator import Instrumentator  # noqa: E402
 
 Instrumentator(
     should_group_status_codes=True,

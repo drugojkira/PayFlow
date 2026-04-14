@@ -54,6 +54,7 @@ class PaymentResponse(BaseModel):
 
 class PaginatedResponse(BaseModel):
     """Generic paginated response wrapper."""
+
     items: list
     total: int
     page: int
@@ -63,6 +64,7 @@ class PaginatedResponse(BaseModel):
 
 class PaymentListResponse(BaseModel):
     """Paginated list of payments."""
+
     items: list[PaymentResponse]
     total: int
     page: int
