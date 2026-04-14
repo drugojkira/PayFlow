@@ -36,26 +36,23 @@ class TestProcessPayment:
         assert payment.status == PaymentStatus.PENDING
 
         # Call task function directly (synchronous, no broker needed)
-        with patch("src.worker.tasks.SessionLocal", return_value=db):
-            with patch("src.worker.tasks.send_notification.delay") as mock_notify:
-                from src.worker.tasks import process_payment
+        from src.worker.tasks import process_payment
 
-                # Call the underlying function, not .delay()
-                process_payment.__wrapped__(
-                    process_payment,
-                    str(payment.id),
-                )
+        with patch("src.database.SessionLocal", return_value=db), \
+             patch.object(db, "close"), \
+             patch("src.worker.tasks.send_notification.delay") as mock_notify:
+            process_payment.__wrapped__(str(payment.id))
 
-                mock_notify.assert_called_once_with(
-                    str(payment.id), "COMPLETED"
-                )
+            mock_notify.assert_called_once_with(
+                str(payment.id), "COMPLETED"
+            )
 
         db.refresh(payment)
         assert payment.status == PaymentStatus.COMPLETED
 
     def test_process_payment_retries_on_error(self, db):
         """Task retries with exponential backoff on failure."""
-        from unittest.mock import PropertyMock
+        from celery.exceptions import Retry
 
         sender = AccountFactory(balance=Decimal("500.00"))
         receiver = AccountFactory(balance=Decimal("100.00"))
@@ -67,29 +64,25 @@ class TestProcessPayment:
             amount=Decimal("100.00"),
         )
 
-        mock_task = MagicMock()
-        mock_task.request.retries = 0
-        mock_task.max_retries = 5
-        mock_task.retry.side_effect = Exception("Retry scheduled")
+        # Make complete_payment fail
+        mock_service = MagicMock()
+        mock_service.complete_payment.side_effect = ConnectionError("DB timeout")
 
-        with patch("src.worker.tasks.SessionLocal") as mock_session_cls:
-            mock_session = MagicMock()
-            mock_session_cls.return_value = mock_session
+        from src.worker.tasks import process_payment
 
-            # Make complete_payment fail
-            mock_service = MagicMock()
-            mock_service.complete_payment.side_effect = ConnectionError("DB timeout")
+        with patch("src.database.SessionLocal", return_value=MagicMock()), \
+             patch("src.services.payment.PaymentService", return_value=mock_service), \
+             patch.object(process_payment, "retry", return_value=Retry()) as mock_retry:
+            # Should call self.retry() → raises Retry
+            with pytest.raises(Retry):
+                process_payment.__wrapped__(str(payment.id))
 
-            with patch("src.worker.tasks.PaymentService", return_value=mock_service):
-                from src.worker.tasks import process_payment
-
-                # Should call self.retry()
-                process_payment.__wrapped__(mock_task, str(payment.id))
-
-                mock_task.retry.assert_called_once()
+            mock_retry.assert_called_once()
 
     def test_marks_failed_after_max_retries(self, db):
         """After max retries, payment is marked FAILED."""
+        from celery.exceptions import MaxRetriesExceededError
+
         sender = AccountFactory(balance=Decimal("500.00"))
         receiver = AccountFactory(balance=Decimal("100.00"))
 
@@ -100,31 +93,19 @@ class TestProcessPayment:
             amount=Decimal("100.00"),
         )
 
-        with patch("src.worker.tasks._mark_payment_failed") as mock_fail:
-            with patch("src.worker.tasks.SessionLocal") as mock_session_cls:
-                mock_session = MagicMock()
-                mock_session_cls.return_value = mock_session
+        mock_service = MagicMock()
+        mock_service.complete_payment.side_effect = Exception("Persistent error")
 
-                mock_service = MagicMock()
-                mock_service.complete_payment.side_effect = Exception("Persistent error")
+        from src.worker.tasks import process_payment
 
-                mock_task = MagicMock()
-                mock_task.request.retries = 5
-                mock_task.max_retries = 5
+        with patch("src.database.SessionLocal", return_value=MagicMock()), \
+             patch("src.services.payment.PaymentService", return_value=mock_service), \
+             patch.object(process_payment, "retry", side_effect=MaxRetriesExceededError()), \
+             patch("src.worker.tasks._mark_payment_failed") as mock_fail:
+            process_payment.__wrapped__(str(payment.id))
 
-                # self.retry raises MaxRetriesExceededError
-                from celery.exceptions import MaxRetriesExceededError
-
-                mock_task.retry.side_effect = MaxRetriesExceededError()
-
-                with patch("src.worker.tasks.PaymentService", return_value=mock_service):
-                    from src.worker.tasks import process_payment
-
-                    process_payment.__wrapped__(mock_task, str(payment.id))
-
-                    mock_fail.assert_called_once()
-                    call_args = mock_fail.call_args
-                    assert call_args[0][0] == str(payment.id)
+            mock_fail.assert_called_once()
+            assert mock_fail.call_args[0][0] == str(payment.id)
 
 
 class TestSendNotification:
@@ -138,7 +119,6 @@ class TestSendNotification:
             from src.worker.tasks import send_notification
 
             send_notification.__wrapped__(
-                send_notification,
                 "payment-123",
                 "COMPLETED",
             )
@@ -186,11 +166,12 @@ class TestProcessPaymentWithRealBroker:
         celery_app.conf.task_eager_propagates = True
 
         try:
-            with patch("src.worker.tasks.SessionLocal", return_value=db):
-                with patch("src.worker.tasks.send_notification.delay"):
-                    from src.worker.tasks import process_payment
+            from src.worker.tasks import process_payment
 
-                    process_payment.delay(str(payment.id))
+            with patch("src.database.SessionLocal", return_value=db), \
+                 patch.object(db, "close"), \
+                 patch("src.worker.tasks.send_notification.delay"):
+                process_payment.delay(str(payment.id))
 
             db.refresh(payment)
             assert payment.status == PaymentStatus.COMPLETED
