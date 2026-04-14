@@ -28,6 +28,7 @@ jobs:
           --health-retries 5
 
     env:
+      PYTHONPATH: ${{ github.workspace }}
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/payments
       CELERY_BROKER_URL: amqp://guest:guest@localhost:5672//
       CELERY_RESULT_BACKEND: rpc://
